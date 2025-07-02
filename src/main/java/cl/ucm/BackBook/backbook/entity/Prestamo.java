@@ -14,15 +14,15 @@ public class Prestamo {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private LocalDate fechaInicio;
-    private LocalDate fechaFin;
-    private Boolean devuelto = false;
+    private LocalDate fechaReserva;
+    private LocalDate fechaDevolucion;
+    private Boolean estado;
 
     @ManyToOne
     @JoinColumn(name = "usuario_id")
     private Usuario usuario;
 
     @ManyToOne
-    @JoinColumn(name = "copia_id")
+    @JoinColumn(name = "copia_libro_id")
     private CopiaLibro copiaLibro;
 }

@@ -2,13 +2,15 @@ package cl.ucm.BackBook.backbook.controller;
 
 import cl.ucm.BackBook.backbook.entity.Prestamo;
 import cl.ucm.BackBook.backbook.service.PrestamoService;
+
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/prestamo")
+@RequestMapping("/api/booking")
 @CrossOrigin(origins = "*")
 public class PrestamoController {
 
@@ -18,23 +20,23 @@ public class PrestamoController {
         this.prestamoService = prestamoService;
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'LECTOR')")
+    @GetMapping("/find/{email}")
+    public ResponseEntity<List<Prestamo>> porEmail(@PathVariable String email) {
+        return ResponseEntity.ok(prestamoService.porEmail(email));
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/new")
-    public ResponseEntity<Prestamo> registrarPrestamo(@RequestBody Prestamo prestamo) {
-        return ResponseEntity.ok(prestamoService.registrar(prestamo));
+    public ResponseEntity<Prestamo> crear(@RequestBody Prestamo prestamo) {
+        return ResponseEntity.ok(prestamoService.guardar(prestamo));
     }
 
-    @GetMapping("/all")
-    public ResponseEntity<List<Prestamo>> obtenerTodos() {
-        return ResponseEntity.ok(prestamoService.obtenerTodos());
+    @PreAuthorize("hasRole('ADMIN')")
+    @PostMapping("/return/{id}")
+    public ResponseEntity<Prestamo> devolver(@PathVariable Long id, @RequestBody Prestamo body) {
+        return prestamoService.marcarComoDevuelto(id, body);
     }
-
-    @PutMapping("/devolver/{id}")
-    public ResponseEntity<Prestamo> devolverLibro(@PathVariable Long id) {
-        return ResponseEntity.ok(prestamoService.devolver(id));
-    }
-    @GetMapping("/usuario/{id}")
-    public ResponseEntity<List<Prestamo>> obtenerPorUsuario(@PathVariable Long id) {
-        return ResponseEntity.ok(prestamoService.obtenerPorUsuario(id));
-    }
-
 }
+
+

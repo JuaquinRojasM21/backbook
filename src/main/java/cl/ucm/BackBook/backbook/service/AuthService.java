@@ -24,10 +24,19 @@ public class AuthService {
         Usuario usuario = usuarioRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
+        if (!usuario.getEstado()) {
+            throw new RuntimeException("El usuario está inactivo");
+        }
+
         if (!passwordEncoder.matches(request.getPassword(), usuario.getPassword())) {
             throw new RuntimeException("Contraseña incorrecta");
         }
 
         return jwtUtil.generateToken(usuario.getEmail(), usuario.getRol().getNombre());
     }
+
+    public String codificarClave(String clave) {
+        return passwordEncoder.encode(clave);
+    }
 }
+

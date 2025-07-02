@@ -13,11 +13,10 @@ public class Libro {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String titulo;
-    private String autor;
-
-    @Column(name = "anio_publicacion")
-    private Integer anioPublicacion;
-
-    private String genero;
+    private String author;
+    private String title;
+    private String type;
+    
+    @Column(columnDefinition = "TEXT") // por si es una imagen base64 grande
+    private String image64;
 }

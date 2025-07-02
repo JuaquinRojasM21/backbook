@@ -8,17 +8,22 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 public class Usuario {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    private String nombre;
-    @Column(unique = true)
 
     private String email;
+    private String nombre;
+    private String apellido;
     private String password;
-    private Boolean estado = true;
+    private Boolean estado;
 
     @ManyToOne
     @JoinColumn(name = "rol_id")
     private Rol rol;
 }
+
+
+
+

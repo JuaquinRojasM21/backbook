@@ -6,5 +6,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.List;
 
 public interface MultaRepository extends JpaRepository<Multa, Long> {
-    List<Multa> findByUsuarioId(Long usuarioId);
+    java.util.List<Multa> findByUsuarioId(Long id);
+    List<Multa> findByUsuarioEmail(String email);
+
+
 }

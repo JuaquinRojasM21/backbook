@@ -2,7 +2,6 @@ package cl.ucm.BackBook.backbook.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-import java.time.LocalDate;
 
 @Entity
 @Data
@@ -14,11 +13,12 @@ public class Multa {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    private Double monto;
     private String descripcion;
-    private LocalDate fecha;
-    private Boolean pagada = false;
+    private Boolean estado;
 
     @ManyToOne
     @JoinColumn(name = "usuario_id")
     private Usuario usuario;
 }
+

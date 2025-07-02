@@ -1,57 +1,84 @@
 package cl.ucm.BackBook.backbook.service;
 
-import cl.ucm.BackBook.backbook.entity.CopiaLibro;
-import cl.ucm.BackBook.backbook.entity.Prestamo;
-import cl.ucm.BackBook.backbook.repository.CopiaLibroRepository;
-import cl.ucm.BackBook.backbook.repository.PrestamoRepository;
+import cl.ucm.BackBook.backbook.entity.*;
+import cl.ucm.BackBook.backbook.repository.*;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 @Service
 public class PrestamoService {
 
     private final PrestamoRepository prestamoRepository;
+    private final UsuarioRepository usuarioRepository;
     private final CopiaLibroRepository copiaLibroRepository;
+    private final MultaRepository multaRepository;
 
-    public PrestamoService(PrestamoRepository prestamoRepository, CopiaLibroRepository copiaLibroRepository) {
-        this.prestamoRepository = prestamoRepository;
-        this.copiaLibroRepository = copiaLibroRepository;
+    public PrestamoService(
+        PrestamoRepository repo,
+        UsuarioRepository usuarioRepo,
+        CopiaLibroRepository copiaRepo,
+        MultaRepository multaRepo
+    ) {
+        this.prestamoRepository = repo;
+        this.usuarioRepository = usuarioRepo;
+        this.copiaLibroRepository = copiaRepo;
+        this.multaRepository = multaRepo;
     }
 
-    public Prestamo registrar(Prestamo prestamo) {
-        CopiaLibro copia = prestamo.getCopiaLibro();
+    public Prestamo guardar(Prestamo p) {
+        Usuario usuario = usuarioRepository.findById(p.getUsuario().getId())
+            .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
-        // Validar disponibilidad
-        if (!copia.getDisponible()) {
-            throw new RuntimeException("La copia ya está prestada");
-        }
+        CopiaLibro copia = copiaLibroRepository.findById(p.getCopiaLibro().getId())
+            .orElseThrow(() -> new RuntimeException("Copia no encontrada"));
 
-        copia.setDisponible(false); // Marcar como no disponible
+        if (!usuario.getEstado()) throw new RuntimeException("El lector está bloqueado");
+        if (!copia.getEstado()) throw new RuntimeException("Copia no disponible");
+
+        p.setFechaReserva(LocalDate.now());
+        p.setFechaDevolucion(LocalDate.now().plusDays(5));
+        p.setEstado(true);
+
+        copia.setEstado(false);
         copiaLibroRepository.save(copia);
 
-        return prestamoRepository.save(prestamo);
+        return prestamoRepository.save(p);
     }
 
     public List<Prestamo> obtenerTodos() {
         return prestamoRepository.findAll();
     }
-    public List<Prestamo> obtenerPorUsuario(Long idUsuario) {
-    return prestamoRepository.findByUsuarioId(idUsuario);
+
+    public List<Prestamo> porEmail(String email) {
+        return prestamoRepository.findByUsuarioEmail(email);
     }
 
+    public ResponseEntity<Prestamo> marcarComoDevuelto(Long id, Prestamo body) {
+        Prestamo p = prestamoRepository.findById(id).orElseThrow();
+        CopiaLibro copia = copiaLibroRepository.findById(p.getCopiaLibro().getId()).orElseThrow();
+        Usuario usuario = usuarioRepository.findById(p.getUsuario().getId()).orElseThrow();
 
-    public Prestamo devolver(Long id) {
-        Prestamo prestamo = prestamoRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Préstamo no encontrado"));
+        p.setEstado(false);
+        copia.setEstado(true);
 
-        if (prestamo.getDevuelto()) {
-            throw new RuntimeException("El libro ya fue devuelto");
+        if (LocalDate.now().isAfter(p.getFechaDevolucion())) {
+            long diasAtraso = ChronoUnit.DAYS.between(p.getFechaDevolucion(), LocalDate.now());
+            double monto = diasAtraso * 1000;
+
+            usuario.setEstado(false);
+            multaRepository.save(new Multa(null, monto, "Multa por libro: " + copia.getLibro().getTitle(), true, usuario));
         }
 
-        prestamo.setDevuelto(true);
-        prestamo.getCopiaLibro().setDisponible(true);
-        copiaLibroRepository.save(prestamo.getCopiaLibro());
-        return prestamoRepository.save(prestamo);
+        copiaLibroRepository.save(copia);
+        usuarioRepository.save(usuario);
+        prestamoRepository.save(p);
+
+        return ResponseEntity.ok(p);
     }
 }
+
+

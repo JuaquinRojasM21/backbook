@@ -1,45 +1,44 @@
 package cl.ucm.BackBook.backbook.service;
 
-import cl.ucm.BackBook.backbook.dto.RegistroRequest;
-import cl.ucm.BackBook.backbook.entity.Rol;
 import cl.ucm.BackBook.backbook.entity.Usuario;
-import cl.ucm.BackBook.backbook.repository.RolRepository;
 import cl.ucm.BackBook.backbook.repository.UsuarioRepository;
-
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.Optional;
 
 @Service
 public class UsuarioService {
 
     private final UsuarioRepository usuarioRepository;
-    private final RolRepository rolRepository;
-    private final BCryptPasswordEncoder passwordEncoder;
 
-    public UsuarioService(UsuarioRepository usuarioRepository, RolRepository rolRepository){
+    public UsuarioService(UsuarioRepository usuarioRepository) {
         this.usuarioRepository = usuarioRepository;
-        this.rolRepository = rolRepository;
-        this.passwordEncoder = new BCryptPasswordEncoder();
     }
 
-    public Usuario registrar(RegistroRequest request){
-        if (usuarioRepository.existsByEmail(request.getEmail())){
-            throw new RuntimeException("El correo ya está registrado.");
-        }
+    public Usuario guardar(Usuario usuario) {
+        return usuarioRepository.save(usuario);
+    }
 
-        // Usar rol desde el request o default a LECTOR
-        String nombreRol = request.getRol() != null ? request.getRol().toUpperCase() : "LECTOR";
+    public List<Usuario> obtenerTodos() {
+        return usuarioRepository.findAll();
+    }
 
-        Rol rol = rolRepository.findByNombre(nombreRol)
-                .orElseThrow(() -> new RuntimeException("Rol " + nombreRol + " no encontrado"));
+    public Optional<Usuario> buscarPorId(Long id) {
+        return usuarioRepository.findById(id);
+    }
 
-        Usuario nuevo = new Usuario();
-        nuevo.setNombre(request.getNombre());
-        nuevo.setEmail(request.getEmail());
-        nuevo.setPassword(passwordEncoder.encode(request.getPassword()));
-        nuevo.setEstado(true);
-        nuevo.setRol(rol);
+    public Usuario buscarPorEmail(String email) {
+        return usuarioRepository.findByEmail(email).orElseThrow();
+    }
 
-        return usuarioRepository.save(nuevo);
+    public boolean existePorEmail(String email) {
+        return usuarioRepository.existsByEmail(email);
+    }
+
+    public Usuario cambiarEstado(String email, boolean estado) {
+        Usuario usuario = usuarioRepository.findByEmail(email).orElseThrow();
+        usuario.setEstado(estado);
+        return usuarioRepository.save(usuario);
     }
 }
